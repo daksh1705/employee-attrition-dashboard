@@ -2,8 +2,9 @@ import streamlit as st
 import pickle
 import numpy as np
 
-model = pickle.load(open("../model/logistic_model.pkl", "rb"))
-scaler = pickle.load(open("../model/scaler.pkl", "rb"))
+model = pickle.load(open("model/logistic_model.pkl", "rb"))
+scaler = pickle.load(open("model/scaler.pkl", "rb"))
+
 
 st.title("🧑‍💼 Employee Attrition Prediction Dashboard")
 
