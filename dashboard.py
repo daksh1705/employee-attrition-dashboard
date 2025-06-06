@@ -1,44 +1,54 @@
 import streamlit as st
+import pandas as pd
 import pickle
 import numpy as np
 
-model = pickle.load(open("model/logistic_model.pkl", "rb"))
-scaler = pickle.load(open("model/scaler.pkl", "rb"))
+# Load model and scaler
+model = pickle.load(open('logistic_model.pkl', 'rb'))
+scaler = pickle.load(open('scaler.pkl', 'rb'))
 
-
-st.title("🧑‍💼 Employee Attrition Prediction Dashboard")
+st.title("🚨 Employee Attrition Prediction Dashboard")
 
 st.sidebar.header("Enter Employee Details")
 
 def user_input_features():
-    satisfaction = st.sidebar.slider('Satisfaction Level', 0.0, 1.0, 0.5)
-    evaluation = st.sidebar.slider('Last Evaluation', 0.0, 1.0, 0.7)
-    projects = st.sidebar.slider('Number of Projects', 2, 7, 4)
-    avg_monthly_hours = st.sidebar.slider('Average Monthly Hours', 80, 310, 160)
-    time_spent = st.sidebar.slider('Years at Company', 1, 10, 3)
-    work_accident = st.sidebar.selectbox('Work Accident', (0, 1))
-    promotion = st.sidebar.selectbox('Promotion Last 5 Years', (0, 1))
-    salary = st.sidebar.selectbox('Salary', ['low', 'medium', 'high'])
+    Age = st.sidebar.slider('Age', 18, 60, 30)
+    DistanceFromHome = st.sidebar.slider('Distance From Home (km)', 1, 30, 10)
+    MonthlyIncome = st.sidebar.slider('Monthly Income ($)', 1000, 20000, 5000)
+    JobSatisfaction = st.sidebar.selectbox('Job Satisfaction (1=Low, 4=High)', [1, 2, 3, 4])
+    WorkLifeBalance = st.sidebar.selectbox('Work-Life Balance (1=Bad, 4=Best)', [1, 2, 3, 4])
+    OverTime = st.sidebar.selectbox('OverTime', ['No', 'Yes'])
+    YearsAtCompany = st.sidebar.slider('Years At Company', 0, 40, 5)
 
-    salary_low = 1 if salary == 'low' else 0
-    salary_medium = 1 if salary == 'medium' else 0
-    salary_high = 1 if salary == 'high' else 0
+    # Convert OverTime to binary
+    OverTime = 1 if OverTime == 'Yes' else 0
 
-    features = np.array([[satisfaction, evaluation, projects, avg_monthly_hours,
-                          time_spent, work_accident, promotion,
-                          salary_low, salary_medium, salary_high]])
+    data = {
+        'Age': Age,
+        'DistanceFromHome': DistanceFromHome,
+        'MonthlyIncome': MonthlyIncome,
+        'JobSatisfaction': JobSatisfaction,
+        'WorkLifeBalance': WorkLifeBalance,
+        'OverTime': OverTime,
+        'YearsAtCompany': YearsAtCompany
+    }
+
+    features = pd.DataFrame(data, index=[0])
     return features
 
-input_data = user_input_features()
-input_data_scaled = scaler.transform(input_data[:, :7])
-final_input = np.hstack((input_data_scaled, input_data[:, 7:]))
+input_df = user_input_features()
+st.subheader('Employee Information:')
+st.write(input_df)
 
-prediction = model.predict(final_input)
-probability = model.predict_proba(final_input)
+# Scale the input
+scaled_input = scaler.transform(input_df)
 
-st.subheader("Prediction:")
-st.write("🔴 Employee Will Leave" if prediction[0] else "🟢 Employee Will Stay")
+# Make prediction
+prediction = model.predict(scaled_input)[0]
+proba = model.predict_proba(scaled_input)[0][1]
 
-st.subheader("Probability:")
-st.write(f"Stay: {probability[0][0]*100:.2f} %")
-st.write(f"Leave: {probability[0][1]*100:.2f} %")
+st.subheader("Prediction Result:")
+if prediction == 1:
+    st.error(f"🔴 The employee is likely to leave. Probability: {proba:.2f}")
+else:
+    st.success(f"🟢 The employee is likely to stay. Probability: {1 - proba:.2f}")
